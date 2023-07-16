@@ -1,62 +1,80 @@
-use axum::{extract::ws::WebSocketUpgrade, response::Html, routing::get, Router};
+use axum::{
+    extract::ws::WebSocketUpgrade,
+    response::Html,
+    routing::get,
+    Router,
+};
 use dioxus::prelude::*;
 
 use crate::trading_core::Bot;
-
-struct Message {
-    role: Role,
-    content: String,
-}
-
-enum Role {
-    User,
-    Bot,
-}
+use super::types::{Message, Role};
 
 fn app(cx: Scope) -> Element {
-    let draft = use_state(cx, || String::new());
     let bot = use_ref(cx, || Bot::new());
+    let draft = use_ref(cx, || String::new());
     let messages = use_ref(cx, || Vec::<Message>::new());
+    let send_lock = use_state(cx, || false);
+
+    let send = move |_| {
+        if send_lock == true {return;}
+        let tmp = draft.read().clone();
+        if tmp.len() == 0 {return;}
+        messages.write().push(Message {
+            role: Role::User,
+            content: draft.read().clone(),
+        });
+        messages.write().push(Message {
+            role: Role::Bot,
+            content: "Please wait...".into(),
+        });
+        draft.set(String::new());
+
+        cx.spawn({
+            send_lock.set(true);
+            let send_lock = send_lock.to_owned();
+            let bot = bot.to_owned();
+            let messages = messages.to_owned();
+            
+            async move {
+                // sleep 2 seconds
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                let response = bot.write().chat(&tmp).await;
+                messages.write().last_mut().unwrap().update_content(response);
+                send_lock.set(false);
+            }
+        })
+    };
 
     cx.render(rsx!(
         style { include_str!("./style.css") }
         div {
+            id: "header",
+            h1 {"An intilligent payment system"}
+            h2 {"Powered by ChatGPT"}
+        }
+        div {
             id: "chat-window",
             class: "chat-window",
-            messages.read().iter().map(|msg| {
-                rsx!(div {
+            for msg in messages.read().iter() {
+                div {
                     class: match msg.role {
                         Role::User => "chat-message user-message",
-                        Role::Bot => "chat-message bot-message",
+                        Role::Bot => "chat-message other-message",
                     },
                     "{msg.content}"
-                })
-            })
+                }
+            }
         }
         div {
             id: "input-area",
             textarea {
-                cols: 50,
                 id: "user-input",
-                value: "{draft}",
+                value: "{draft.read()}",
                 oninput: |evt| draft.set(evt.value.clone()),
-
             }
-            button { onclick: move |_| {
-                let mut bot = bot.write();
-                let mut messages = messages.write();
-                messages.push(Message {
-                    role: Role::User,
-                    content: (*draft.current()).clone(),
-                });
-                let tmp = draft.clone();
-                draft.set(String::new());
-                let response = bot.chat(&tmp);
-                messages.push(Message {
-                    role: Role::Bot,
-                    content: response,
-                });
-            }, "发送" }
+            button { 
+                id: "send-button",
+                onclick: send, "发送" }
         }
     ))
 }

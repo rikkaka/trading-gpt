@@ -1,3 +1,4 @@
-mod webpage;
+mod ssr_server;
+mod types;
 
-pub use webpage::start_server;
+pub use ssr_server::start_server;

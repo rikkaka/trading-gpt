@@ -5,7 +5,7 @@ impl Bot {
         Bot {}
     }
 
-    pub fn chat(&mut self, draft: &str) -> String {
+    pub async fn chat(&mut self, draft: &str) -> String {
         "developing...".into()
     }
 }
