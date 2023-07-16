@@ -33,8 +33,7 @@ fn app(cx: Scope) -> Element {
             let messages = messages.to_owned();
             
             async move {
-                // sleep 2 seconds
-                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 let response = bot.write().chat(&tmp).await;
                 messages.write().last_mut().unwrap().loaded(response);
                 send_lock.set(false);
