@@ -12,7 +12,8 @@ impl Message {
         }
     }
 
-    pub fn update_content(&mut self, content: String) {
+    pub fn loaded(&mut self, content: String) {
+        self.role = Role::Bot;
         self.content = content;
     }
 }
@@ -21,4 +22,5 @@ impl Message {
 pub enum Role {
     User,
     Bot,
+    Loading,
 }

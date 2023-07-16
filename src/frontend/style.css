@@ -149,3 +149,18 @@ h2 {
     height: 80px;
     margin-bottom: 10px;
 }
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1); /* 这会创建一个透明的边框 */
+    border-left-color: #3498db; /* 这改变了旋转边框的颜色 */
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;  /* 这减小了大小并加速了旋转 */
+    transition: all 0.5s ease-out;  /* 这添加了一个过渡效果 */
+  }

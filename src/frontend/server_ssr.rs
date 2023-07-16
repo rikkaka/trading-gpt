@@ -6,7 +6,7 @@ use axum::{
 };
 use dioxus::prelude::*;
 
-use crate::trading_core::Bot;
+use crate::{trading_core::Bot, frontend::components::{UserMessage, OtherMessage, Loading}};
 use super::types::{Message, Role};
 
 fn app(cx: Scope) -> Element {
@@ -23,10 +23,7 @@ fn app(cx: Scope) -> Element {
             role: Role::User,
             content: draft.read().clone(),
         });
-        messages.write().push(Message {
-            role: Role::Bot,
-            content: "Please wait...".into(),
-        });
+        messages.write().push(Message::new(Role::Loading, "Please wait".into()));
         draft.set(String::new());
 
         cx.spawn({
@@ -39,7 +36,7 @@ fn app(cx: Scope) -> Element {
                 // sleep 2 seconds
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 let response = bot.write().chat(&tmp).await;
-                messages.write().last_mut().unwrap().update_content(response);
+                messages.write().last_mut().unwrap().loaded(response);
                 send_lock.set(false);
             }
         })
@@ -56,12 +53,10 @@ fn app(cx: Scope) -> Element {
             id: "chat-window",
             class: "chat-window",
             for msg in messages.read().iter() {
-                div {
-                    class: match msg.role {
-                        Role::User => "chat-message user-message",
-                        Role::Bot => "chat-message other-message",
-                    },
-                    "{msg.content}"
+                match msg.role {
+                    Role::User => rsx!(UserMessage { content: msg.content.clone() }),
+                    Role::Bot => rsx!(OtherMessage { content: msg.content.clone() }),
+                    Role::Loading => rsx!(Loading { content: msg.content.clone() }),
                 }
             }
         }
@@ -116,4 +111,11 @@ pub async fn start_server() {
         .serve(app.into_make_service())
         .await
         .unwrap();
+}
+
+pub fn About(cx: Scope) -> Element {
+    cx.render(rsx!(p {
+        b {"Dioxus Labs"}
+        " An Open Source project dedicated to making Rust UI wonderful."
+    }))
 }
