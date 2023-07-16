@@ -1,12 +1,12 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use dotenvy::dotenv;
 use lazy_static::lazy_static;
 
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 
-use crate::schema::users;
-use crate::types::User;
+use super::schema::users;
+use super::types::User;
 
 lazy_static! {
     static ref POOL: Pool<ConnectionManager<SqliteConnection>> = {
@@ -25,6 +25,9 @@ type Pooled = diesel::r2d2::PooledConnection<ConnectionManager<SqliteConnection>
 impl User {
     pub fn insert_into_db(&self) -> Result<()> {
         let mut conn = POOL.get()?;
+        if self.check_existence(&mut conn)? {
+            return Err(anyhow!("用户名已存在"));
+        }
         self.insert_into_db_conn(&mut conn)
     }
 
@@ -41,6 +44,14 @@ impl User {
     pub fn delete_from_db(&self) -> Result<()> {
         let mut conn = POOL.get()?;
         self.delete_from_db_conn(&mut conn)
+    }
+
+    fn check_existence(&self, conn: &mut Pooled) -> Result<bool> {
+        let count = users::table
+            .filter(users::username.eq(&self.username))
+            .count()
+            .get_result::<i64>(conn)?;
+        Ok(count > 0)
     }
 
     fn insert_into_db_conn(&self, conn: &mut Pooled) -> Result<()> {
@@ -73,11 +84,6 @@ impl User {
     }
 }
 
-fn count_users(conn: &mut Pooled) -> Result<i64> {
-    let count = users::table.count().get_result(conn)?;
-    Ok(count)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -103,7 +109,7 @@ mod tests {
         assert_eq!(user_updated, user3);
 
         user3.delete_from_db_conn(&mut conn).unwrap();
-        let count = count_users(&mut conn).unwrap();
+        let count: i64 = users::table.count().get_result(&mut conn).unwrap();
         assert_eq!(count, 0);
     }
 }

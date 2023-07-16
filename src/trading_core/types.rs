@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 
 #[derive(Queryable, Selectable, Insertable, AsChangeset)]
-#[diesel(table_name = crate::schema::users)]
+#[diesel(table_name = super::schema::users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 #[derive(Debug, PartialEq, Eq)]
 pub struct User {

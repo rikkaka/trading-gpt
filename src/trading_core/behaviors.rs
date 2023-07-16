@@ -1,6 +1,5 @@
+use super::types::User;
 use crate::global;
-use crate::sql;
-use crate::types::User;
 
 use anyhow::Result;
 
@@ -24,10 +23,10 @@ impl User {
     }
 
     fn init(&self) -> Result<()> {
-        unimplemented!()
+        self.insert_into_db()
     }
 
-    fn still_valid(&self) -> Result<()> {
+    fn login_still_valid(&self) -> Result<()> {
         unimplemented!()
     }
 }
