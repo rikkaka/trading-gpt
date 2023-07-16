@@ -1,4 +1,4 @@
-mod ssr_server;
+mod server_ssr;
 mod types;
 
-pub use ssr_server::start_server;
+pub use server_ssr::start_server;
