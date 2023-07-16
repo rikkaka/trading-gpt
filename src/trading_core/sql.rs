@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Error, Result};
 use dotenvy::dotenv;
 use lazy_static::lazy_static;
 
@@ -25,15 +25,18 @@ type Pooled = diesel::r2d2::PooledConnection<ConnectionManager<SqliteConnection>
 impl User {
     pub fn insert_into_db(&self) -> Result<()> {
         let mut conn = POOL.get()?;
-        if self.check_existence(&mut conn)? {
-            return Err(anyhow!("用户名已存在"));
+        if User::check_existence_conn(&self.username, &mut conn)? {
+            bail!("用户名已存在")
         }
         self.insert_into_db_conn(&mut conn)
     }
 
     pub fn retrieve_from_db(username: &str) -> Result<User> {
         let mut conn = POOL.get()?;
-        User::retrieve_from_db_conn(username, &mut conn)
+        if !User::check_existence_conn(username, &mut conn)? {
+            bail!("用户名不存在")
+        }
+        User::retrieve_from_db_conn(&username, &mut conn)
     }
 
     pub fn update_to_db(&self) -> Result<()> {
@@ -46,9 +49,23 @@ impl User {
         self.delete_from_db_conn(&mut conn)
     }
 
-    fn check_existence(&self, conn: &mut Pooled) -> Result<bool> {
+    pub fn transfer_to_other(&mut self, to_username: &str, amount: i32) -> Result<()> {
+        let mut conn = POOL.get().unwrap();
+        conn.transaction::<_, Error, _>(|conn| {
+            self.check_balance_conn(amount, conn)?;
+            let mut other = User::retrieve_from_db_conn(to_username, conn)?;
+            self.balance -= amount;
+            self.update_to_db_conn(conn).unwrap();
+            other.balance += amount;
+            other.update_to_db_conn(conn).unwrap();
+
+            Ok(())
+        })
+    }
+
+    fn check_existence_conn(username: &str, conn: &mut Pooled) -> Result<bool> {
         let count = users::table
-            .filter(users::username.eq(&self.username))
+            .filter(users::username.eq(username))
             .count()
             .get_result::<i64>(conn)?;
         Ok(count > 0)
@@ -81,6 +98,18 @@ impl User {
             .filter(users::username.eq(&self.username))
             .execute(conn)?;
         Ok(())
+    }
+
+    fn check_balance_conn(&self, amount: i32, conn: &mut Pooled) -> Result<()> {
+        let balance = users::table
+            .filter(users::username.eq(&self.username))
+            .select(users::balance)
+            .first::<i32>(conn)?;
+        if balance >= amount {
+            Ok(())
+        } else {
+            bail!("余额不足")
+        }
     }
 }
 
