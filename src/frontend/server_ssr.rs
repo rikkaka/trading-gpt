@@ -9,6 +9,7 @@ use dioxus::prelude::*;
 use crate::trading_core::Bot;
 use super::types::*;
 use super::components::*;
+use dotenvy::dotenv;
 
 fn app(cx: Scope) -> Element {
     let bot = use_ref(cx, || Bot::new());
@@ -84,7 +85,11 @@ tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 }
 
 pub async fn start_server() {
-    let addr: std::net::SocketAddr = ([127, 0, 0, 1], 3030).into();
+    dotenv().ok();
+    let reachable_addr = std::env::var("REACHABLE_ADDR").unwrap();
+    let port = std::env::var("PORT").unwrap().parse::<u16>().unwrap();
+
+    let addr: std::net::SocketAddr = ([127, 0, 0, 1], port).into();
 
     let view = dioxus_liveview::LiveViewPool::new();
 
@@ -101,7 +106,7 @@ pub async fn start_server() {
                 {glue}
             </html>
             "#,
-                    glue = dioxus_liveview::interpreter_glue(&format!("ws://{addr}/ws"))
+                    glue = dioxus_liveview::interpreter_glue(&format!("ws://{reachable_addr}:{port}/ws"))
                 ))
             }),
         )
@@ -120,11 +125,4 @@ pub async fn start_server() {
         .serve(app.into_make_service())
         .await
         .unwrap();
-}
-
-pub fn About(cx: Scope) -> Element {
-    cx.render(rsx!(p {
-        b {"Dioxus Labs"}
-        " An Open Source project dedicated to making Rust UI wonderful."
-    }))
 }

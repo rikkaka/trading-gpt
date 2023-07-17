@@ -3,6 +3,7 @@ body {
     margin: 0;
     padding: 0;
     background-color: #e4ecef;
+    height: 100%;
 }
 
 button {
@@ -29,6 +30,7 @@ textarea {
 body {
     font: 16px;
     font-family: Arial, sans-serif, 'Helvetica Neue', Helvetica;
+    /* background-color: #682848; */
     color: #4d4d4d;
     /* margin: auto;
     max-width: 230px;
@@ -38,23 +40,23 @@ body {
     /* font-weight: 300; */
     display: flex;
     justify-content: center;
-    align-items: center;
-    height: 100vh;
+    align-items: flex-start;
+    /* height: 100vh; */
 }
 
 #header {
     /* display: flex; */  
-    width: 520px;
-    margin-left: auto;
-    margin-right: auto;
-    margin: 0 auto;
-    height: 80px;
-    margin-bottom: 10px;
+    /* width: 520px; */
+    margin: 0 auto 10px;
+    /* height: 80px; */
+    flex-grow: 1;
 }
 
 #chat-window {
     /* width: 500px; */
-    height: 420px;
+    height: calc(100vh - 230px);
+    flex-grow: 5;
+    /* flex-basis: 60%; */
     background: #f5f5f5;
     overflow: auto;
     border: 1px solid #ccc;
@@ -67,7 +69,8 @@ body {
 #input-area {
     background-color: #0078ff;
     /* width: 522px; */
-    height: 80px;
+    /* height: 80px; */
+    flex-grow: 1;
     display: flex;
     justify-content: center;
     padding: 0%;
@@ -77,7 +80,7 @@ body {
 }
 
 #bottom-holder {
-    height: 30px;
+    flex-grow: 1;
 }
 
 .chat-message {
