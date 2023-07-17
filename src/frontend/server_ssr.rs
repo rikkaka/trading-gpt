@@ -9,6 +9,7 @@ use dioxus::prelude::*;
 use crate::trading_core::Bot;
 use super::types::*;
 use super::components::*;
+use dotenvy::dotenv;
 
 fn app(cx: Scope) -> Element {
     let bot = use_ref(cx, || Bot::new());
@@ -84,7 +85,11 @@ tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 }
 
 pub async fn start_server() {
-    let addr: std::net::SocketAddr = ([0, 0, 0, 0], 3030).into();
+    dotenv().ok();
+    let reachable_addr = std::env::var("REACHABLE_ADDR").unwrap();
+    let port = std::env::var("PORT").unwrap().parse::<u16>().unwrap();
+
+    let addr: std::net::SocketAddr = ([0, 0, 0, 0], port).into();
 
     let view = dioxus_liveview::LiveViewPool::new();
 
@@ -96,15 +101,15 @@ pub async fn start_server() {
                     r#"
             <!DOCTYPE html>
             <html>
-            <head> 
-            <title>Trading GPT</title>  
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-        </head>
+                <head> 
+                    <title>Trading GPT</title>  
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                </head>
                 <body> <div id="main"></div> </body>
                 {glue}
             </html>
             "#,
-                    glue = dioxus_liveview::interpreter_glue(&format!("ws://150.158.21.38:3030/ws"))
+                    glue = dioxus_liveview::interpreter_glue(&format!("ws://{reachable_addr}:{port}/ws"))
                 ))
             }),
         )
