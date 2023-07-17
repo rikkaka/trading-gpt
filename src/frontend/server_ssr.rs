@@ -75,7 +75,10 @@ tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
             }
             button { 
                 id: "send-button",
-                onclick: send, "发送" }
+                onclick: send, "Send" }
+        }
+        div {
+            id: "bottom-holder"
         }
     ))
 }
