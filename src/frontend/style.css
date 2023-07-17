@@ -54,8 +54,8 @@ body {
 
 #chat-window {
     /* width: 500px; */
-    height: calc(100vh - 250px);
-    flex-grow: 5;
+    height: calc(100vh - 300px);
+    /* flex-grow: 5; */
     /* flex-basis: 60%; */
     background: #f5f5f5;
     overflow: auto;
@@ -69,8 +69,8 @@ body {
 #input-area {
     background-color: #0078ff;
     /* width: 522px; */
-    /* height: 80px; */
-    flex-grow: 1;
+    height: 80px;
+    flex-grow: 2;
     display: flex;
     justify-content: center;
     padding: 0%;
@@ -79,9 +79,9 @@ body {
     margin-right: auto;
 }
 
-#bottom-holder {
+/* #bottom-holder {
     flex-grow: 1;
-}
+} */
 
 .chat-message {
     max-width: 60%;
@@ -138,7 +138,7 @@ body {
 }
 
 #send-button {
-    width: 10%;
+    width: 15%;
     margin: 0;
 }
 
