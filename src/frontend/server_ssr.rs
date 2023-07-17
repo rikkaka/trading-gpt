@@ -6,17 +6,21 @@ use axum::{
 };
 use dioxus::prelude::*;
 
-use crate::{trading_core::Bot, frontend::components::{UserMessage, OtherMessage, Loading}};
-use super::types::{Message, Role};
+use crate::trading_core::Bot;
+use super::types::*;
+use super::components::*;
 
 fn app(cx: Scope) -> Element {
     let bot = use_ref(cx, || Bot::new());
     let draft = use_ref(cx, || String::new());
     let messages = use_ref(cx, || Vec::<Message>::new());
     let send_lock = use_state(cx, || false);
+    let clean = use_state(cx, || false);
 
     let send = move |_| {
         if send_lock == true {return;}
+        send_lock.set(true);
+        clean.set(true);
         let tmp = draft.read().clone();
         if tmp.len() == 0 {return;}
         messages.write().push(Message {
@@ -27,7 +31,6 @@ fn app(cx: Scope) -> Element {
         draft.set(String::new());
 
         cx.spawn({
-            send_lock.set(true);
             let send_lock = send_lock.to_owned();
             let bot = bot.to_owned();
             let messages = messages.to_owned();
@@ -61,10 +64,14 @@ tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         }
         div {
             id: "input-area",
-            textarea {
-                id: "user-input",
-                value: "{draft.read()}",
-                oninput: |evt| draft.set(evt.value.clone()),
+            // textarea {
+            //     id: "user-input",
+            //     value: "{draft.read()}",
+            //     oninput: |evt| draft.set(evt.value.clone()),
+            // }
+            UserInput {
+                draft: draft,
+                clean: clean
             }
             button { 
                 id: "send-button",

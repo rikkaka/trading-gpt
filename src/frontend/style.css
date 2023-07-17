@@ -35,7 +35,7 @@ body {
     min-width: 550px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-weight: 300;
+    /* font-weight: 300; */
 }
 
 h1 {
