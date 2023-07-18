@@ -1,14 +1,15 @@
-use anyhow::{anyhow, bail, ensure, Result, Ok};
+use anyhow::{anyhow, bail, ensure, Ok, Result};
 use async_openai::{
     config::OpenAIConfig,
     types::{self as openai_types, FunctionCall},
     Client,
 };
-use diesel::expression::is_aggregate::No;
 use indoc::formatdoc;
 use lazy_static::lazy_static;
+use log::debug;
 use serde_json::{json, Value};
 use tokio::sync::mpsc::Sender;
+use tracing_subscriber::field::debug;
 
 use super::types::User;
 
@@ -20,17 +21,20 @@ type ModelArgs = openai_types::CreateChatCompletionRequestArgs;
 type MessageArgs = openai_types::ChatCompletionRequestMessageArgs;
 type FunctionArgs = openai_types::ChatCompletionFunctionsArgs;
 
-static SYSTEM_INIT: &str = "You are an AI assistant of an intelligent trading system. You need to assist the user in performing a series of businesses based on the functions you are provided.\n";
+static SYSTEM_INIT: &str = "You are the AI assistant of a payment system. \
+You need to assist the user based on the functions you are provided. \
+Note that you have access to only four functions: signup, login, transfer, and logout. \
+Please focus on the functions you are provided.\n";
 
 lazy_static! {
     static ref MODEL_INIT: ModelArgs = ModelArgs::default()
-        .max_tokens(4096u16)
+        // .max_tokens(0u16)
         .model("gpt-3.5-turbo")
         .to_owned();
     static ref FUCTIONS_UNLOGIN: Vec<Function> = vec![
         FunctionArgs::default()
             .name("login")
-            .description("Let the user login")
+            .description("Let the user login. User should provide username and password")
             .parameters(json!({
                 "type": "object",
                 "properties": {
@@ -43,7 +47,7 @@ lazy_static! {
             .unwrap(),
         FunctionArgs::default()
             .name("signup")
-            .description("Sign up a new user")
+            .description("Sign up a new user. User should provide username and password. You CANNOT sign up if the user hasn't provided username and password")
             .parameters(json!({
                 "type": "object",
                 "properties": {
@@ -58,12 +62,12 @@ lazy_static! {
     static ref FUCTIONS_LOGIN: Vec<Function> = vec![
         FunctionArgs::default()
             .name("transfer")
-            .description("Transfer money to another user")
+            .description("Transfer money to another user. User should provide the receiver and the amount to transfer")
             .parameters(json!({
                 "type": "object",
                 "properties": {
                     "to": {"type": "string"},
-                    "amount": {"type": "int32"}
+                    "amount": {"type": "integer"}
                 },
             }))
             .build()
@@ -96,33 +100,40 @@ pub struct Bot {
 
 impl Bot {
     pub fn new(tx: Sender<String>) -> Bot {
-        let functions = FUCTIONS_UNLOGIN.to_owned();
-        Bot {
+        let mut bot = Bot {
             tx,
             client: Client::new(),
             system: Vec::new(),
             messages: Vec::new(),
             messages_tmp: Vec::new(),
-            functions,
+            functions: Vec::new(),
             usermaynull: None,
-        }
+        };
+        bot.set_system();
+        bot.set_functions();
+        bot
     }
 
     pub async fn chat(&mut self, draft: &str) -> Result<()> {
-        // self.add_message(openai_types::Role::User, draft).unwrap();
-        // unimplemented!()
-        self.tx.send("1".into()).await?;
-        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-        self.tx.send("2".into()).await?;
-        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-        self.tx.send("3".into()).await?;
-
+        self.add_message(openai_types::Role::User, draft).unwrap();
+        self.chat_call_loop().await?;
         Ok(())
     }
 
     fn add_message(&mut self, role: openai_types::Role, content: &str) -> Result<()> {
         self.messages
             .push(MessageArgs::default().role(role).content(content).build()?);
+        Ok(())
+    }
+
+    fn add_function_msg(&mut self, name: &str, content: &str) -> Result<()> {
+        self.messages.push(
+            MessageArgs::default()
+                .role(openai_types::Role::Function)
+                .name(name)
+                .content(content)
+                .build()?,
+        );
         Ok(())
     }
 
@@ -167,12 +178,14 @@ impl Bot {
     }
 
     fn build_model(&self) -> Result<Model> {
+        debug!("Ready to build model.");
         let model = MODEL_INIT
             .to_owned()
-            .messages(vec![self.system.to_owned(), self.messages_tmp.to_owned()].concat())
+            .messages(vec![self.system.to_owned(), self.messages.to_owned()].concat())
             .functions(self.functions.to_owned())
             .function_call("auto")
             .build()?;
+        debug!("Model built: {:?}", model);
         Ok(model)
     }
 
@@ -191,38 +204,48 @@ impl Bot {
         Ok(response)
     }
 
-    async fn chat_call_loop(&mut self) -> Result<String> {
+    async fn chat_call_loop(&mut self) -> Result<()> {
         loop {
-            let response = self.chat_once().await?;
-            self.add_message(response.role, &response.content.unwrap())?;
+            let mut response = self.chat_once().await?;
+            let message = response.content;
+            match message {
+                Some(msg) => {
+                    self.add_message(response.role, &msg)?;
+                    self.tx.send(msg).await?
+                }
+                None => (),
+            };
             if let Some(function_call) = response.function_call {
-                let system_response = self.perform(function_call)?;
-                self.add_message(openai_types::Role::Function, &system_response)?;
+                debug!("Function call: {:?}", function_call);
+                let system_response = self.perform(&function_call).unwrap_or_else(|e| format!("Error: {}", e));
+                self.add_function_msg(&function_call.name, &system_response)?;
+                debug!("System response: {}", system_response);
+                response = self.chat_once().await?;
             } else {
-                unimplemented!()
+                return Ok(());
             }
         }
     }
 
-    fn perform(&mut self, function_call: FunctionCall) -> Result<String> {
+    fn perform(&mut self, function_call: &FunctionCall) -> Result<String> {
         let args: serde_json::Value = function_call.arguments.parse()?;
         match &function_call.name[..] {
             "signup" => {
                 let username = args.get_or("username", "Missing username")?;
                 let password = args.get_or("password", "Missing password")?;
-                self.signup(username, password);
+                self.signup(username, password)?;
                 Ok("Signup successfully".to_string())
             }
 
             "login" => {
                 let username = args.get_or("username", "Missing username")?;
                 let password = args.get_or("password", "Missing password")?;
-                self.login(username, password);
+                self.login(username, password)?;
                 Ok("Login successfully".to_string())
             }
 
             "logout" => {
-                self.logout();
+                self.logout()?;
                 Ok("Logout successfully".to_string())
             }
 
@@ -233,7 +256,7 @@ impl Bot {
                     .parse::<i32>()
                     .or_else(|_| bail!("Amout must be an int32"))?;
                 ensure!(amount > 0, "Amount must be positive");
-                self.transfer(to, amount);
+                self.transfer(to, amount)?;
                 Ok("Transfer successfully".to_string())
             }
 
@@ -241,27 +264,35 @@ impl Bot {
         }
     }
 
-    fn signup(&mut self, username: &str, password: &str) {
-        User::signup(username, password).unwrap();
-    }
-
-    fn login(&mut self, username: &str, password: &str) {
-        let user = User::login(username, password).unwrap();
+    fn signup(&mut self, username: &str, password: &str) -> Result<()> {
+        let user = User::signup(username, password).or_else(|e| bail!("Signup failed: {}", e))?;
         self.usermaynull = Some(user);
         self.set_system().unwrap();
         self.set_functions().unwrap();
+        Ok(())
     }
 
-    fn logout(&mut self) {
+    fn login(&mut self, username: &str, password: &str) -> Result<()> {
+        let user = User::login(username, password).or_else(|e| bail!("Login failed: {}", e))?;
+        self.usermaynull = Some(user);
+        self.set_system().unwrap();
+        self.set_functions().unwrap();
+        Ok(())
+    }
+
+    fn logout(&mut self) -> Result<()> {
         self.usermaynull = None;
         self.set_system().unwrap();
         self.set_functions().unwrap();
+        Ok(())
     }
 
-    fn transfer(&mut self, to: &str, amount: i32) {
-        let user = self.usermaynull.as_mut().unwrap();
+    fn transfer(&mut self, to: &str, amount: i32) -> Result<()> {
+        let user = self.usermaynull.as_mut().ok_or_else(|| anyhow!("User not logged in"))?;
+        ensure!(user.balance >= amount, "Insufficient balance");
         user.transfer(to, amount).unwrap();
         self.set_system().unwrap();
+        Ok(())
     }
 }
 

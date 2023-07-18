@@ -38,6 +38,7 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     /* font-weight: 300; */
+    /* width: auto; */
     display: flex;
     justify-content: center;
     align-items: flex-start;
@@ -46,14 +47,14 @@ body {
 
 #header {
     /* display: flex; */  
-    /* width: 520px; */
+    width: 520px;
     margin: 0 auto 10px;
     /* height: 80px; */
     flex-grow: 1;
 }
 
 #chat-window {
-    /* width: 500px; */
+    width: 500px;
     height: calc(100vh - 300px);
     /* flex-grow: 5; */
     /* flex-basis: 60%; */

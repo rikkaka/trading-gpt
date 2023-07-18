@@ -2,6 +2,7 @@ use axum::{extract::ws::WebSocketUpgrade, response::Html, routing::get, Router};
 use dioxus::prelude::*;
 use log::debug;
 use tokio::sync::mpsc;
+use tracing_subscriber::field::debug;
 
 use super::components::*;
 use super::types::*;
@@ -35,14 +36,13 @@ fn app(cx: Scope) -> Element {
         if send_lock == true {
             return;
         }
-        send_lock.set(true);
-        loading.set(true);
-        clean.set(true);
-
         let tmp = draft.read().clone();
         if tmp.len() == 0 {
             return;
         }
+        send_lock.set(true);
+        loading.set(true);
+        clean.set(true);
         messages.write().push(Message {
             role: Role::User,
             content: draft.read().replace("\n", "<br>").clone(),
@@ -59,12 +59,14 @@ fn app(cx: Scope) -> Element {
             let messages = messages.to_owned();
 
             async move {
+                debug!("Sending message: {}", tmp);
                 bot.write().chat(&tmp).await.unwrap_or_else(|err| {
                     messages.write().push(Message::new(
                         Role::Bot,
                         format!("Error: {}", err.to_string()),
                     ));
                 });
+                // bot.write().chat(&tmp).await.unwrap();
 
                 // let response = bot.write().chat(&tmp).await;
                 // messages.write().last_mut().unwrap().loaded(response.replace("\n","<br>"));
@@ -113,9 +115,9 @@ fn app(cx: Scope) -> Element {
 pub async fn start_server() {
     dotenv().ok();
     let reachable_addr = std::env::var("REACHABLE_ADDR").unwrap();
-    let port = std::env::var("PORT").unwrap().parse::<u16>().unwrap();
+    let listen_addr = std::env::var("LISTEN_ADDR").unwrap();
 
-    let addr: std::net::SocketAddr = ([0, 0, 0, 0], port).into();
+    let addr: std::net::SocketAddr = listen_addr.parse().unwrap();
 
     let view = dioxus_liveview::LiveViewPool::new();
 
