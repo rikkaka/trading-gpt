@@ -6,15 +6,7 @@ pub struct Message {
 
 impl Message {
     pub fn new(role: Role, content: String) -> Message {
-        Message {
-            role,
-            content,
-        }
-    }
-
-    pub fn loaded(&mut self, content: String) {
-        self.role = Role::Bot;
-        self.content = content;
+        Message { role, content }
     }
 }
 

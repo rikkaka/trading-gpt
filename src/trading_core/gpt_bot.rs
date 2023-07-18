@@ -214,7 +214,9 @@ impl Bot {
             };
             if let Some(function_call) = response.function_call {
                 debug!("Function call: {:?}", function_call);
-                let system_response = self.perform(&function_call).unwrap_or_else(|e| format!("Error: {}", e));
+                let system_response = self
+                    .perform(&function_call)
+                    .unwrap_or_else(|e| format!("Error: {}", e));
                 self.add_function_msg(&function_call.name, &system_response)?;
                 debug!("System response: {}", system_response);
             } else {
@@ -251,7 +253,6 @@ impl Bot {
                 let amount = amount
                     .parse::<i32>()
                     .or_else(|_| bail!("Amout must be an int32"))?;
-                ensure!(amount > 0, "Amount must be positive");
                 self.transfer(to, amount)?;
                 Ok("Transfer successfully".to_string())
             }
@@ -284,8 +285,12 @@ impl Bot {
     }
 
     fn transfer(&mut self, to: &str, amount: i32) -> Result<()> {
-        let user = self.usermaynull.as_mut().ok_or_else(|| anyhow!("User not logged in"))?;
+        let user = self
+            .usermaynull
+            .as_mut()
+            .ok_or_else(|| anyhow!("User not logged in"))?;
         ensure!(user.balance >= amount, "Insufficient balance");
+        ensure!(user.balance > 0, "Balance must be positive");
         user.transfer(to, amount).unwrap();
         self.set_system().unwrap();
         Ok(())

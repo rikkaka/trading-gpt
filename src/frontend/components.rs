@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 
 #[derive(PartialEq, Props)]
 pub struct ContentProps {
-    content: String
+    content: String,
 }
 
 pub fn UserMessage(cx: Scope<ContentProps>) -> Element {
@@ -39,7 +39,7 @@ pub fn Loading(cx: Scope) -> Element {
 #[derive(PartialEq, Props)]
 pub struct DraftProps<'a> {
     draft: &'a UseRef<String>,
-    clean: &'a UseState<bool>
+    clean: &'a UseState<bool>,
 }
 
 pub fn UserInput<'a>(cx: Scope<'a, DraftProps>) -> Element<'a> {
@@ -47,25 +47,21 @@ pub fn UserInput<'a>(cx: Scope<'a, DraftProps>) -> Element<'a> {
     let clean = cx.props.clean;
     if **clean {
         clean.set(false);
-        cx.render(rsx!(
-            textarea {
-                id: "user-input",
-                placeholder: "Type your message here",
-                value: "",
-                oninput: |e| {
-                    draft.set(e.value.clone());
-                },
-            }
-        ))
+        cx.render(rsx!(textarea {
+            id: "user-input",
+            placeholder: "Type your message here",
+            value: "",
+            oninput: |e| {
+                draft.set(e.value.clone());
+            },
+        }))
     } else {
-        cx.render(rsx!(
-            textarea {
-                id: "user-input",
-                placeholder: "Type your message here",
-                oninput: |e| {
-                    draft.set(e.value.clone());
-                },
-            }
-        ))
+        cx.render(rsx!(textarea {
+            id: "user-input",
+            placeholder: "Type your message here",
+            oninput: |e| {
+                draft.set(e.value.clone());
+            },
+        }))
     }
 }
