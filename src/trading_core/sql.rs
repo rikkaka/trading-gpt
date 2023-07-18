@@ -26,7 +26,7 @@ impl User {
     pub fn insert_into_db(&self) -> Result<()> {
         let mut conn = POOL.get()?;
         if User::check_existence_conn(&self.username, &mut conn)? {
-            bail!("用户名已存在")
+            bail!("Username already exists")
         }
         self.insert_into_db_conn(&mut conn)
     }
@@ -34,7 +34,7 @@ impl User {
     pub fn retrieve_from_db(username: &str) -> Result<User> {
         let mut conn = POOL.get()?;
         if !User::check_existence_conn(username, &mut conn)? {
-            bail!("用户名不存在")
+            bail!("Username doesn't exist")
         }
         User::retrieve_from_db_conn(&username, &mut conn)
     }
@@ -108,7 +108,7 @@ impl User {
         if balance >= amount {
             Ok(())
         } else {
-            bail!("余额不足")
+            bail!("Insufficient balance")
         }
     }
 }

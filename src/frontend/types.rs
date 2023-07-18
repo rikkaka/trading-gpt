@@ -22,5 +22,4 @@ impl Message {
 pub enum Role {
     User,
     Bot,
-    Loading,
 }

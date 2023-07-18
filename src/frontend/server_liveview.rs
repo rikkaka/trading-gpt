@@ -1,45 +1,74 @@
-use axum::{
-    extract::ws::WebSocketUpgrade,
-    response::Html,
-    routing::get,
-    Router,
-};
+use axum::{extract::ws::WebSocketUpgrade, response::Html, routing::get, Router};
 use dioxus::prelude::*;
+use log::debug;
+use tokio::sync::mpsc;
 
-use crate::trading_core::Bot;
-use super::types::*;
 use super::components::*;
+use super::types::*;
+use crate::trading_core::Bot;
 use dotenvy::dotenv;
 
 fn app(cx: Scope) -> Element {
-    let bot = use_ref(cx, || Bot::new());
+    let (tx, rx) = mpsc::channel::<String>(32);
+
+    let bot = use_ref(cx, || Bot::new(tx));
     let draft = use_ref(cx, || String::new());
     let messages = use_ref(cx, || Vec::<Message>::new());
     let send_lock = use_state(cx, || false);
     let clean = use_state(cx, || false);
+    let loading = use_state(cx, || false);
+
+    use_future(cx, (), move |_| {
+        let mut rx = rx;
+        let messages = messages.to_owned();
+        async move {
+            while let Some(msg) = rx.recv().await {
+                messages.write().push(Message {
+                    role: Role::Bot,
+                    content: msg,
+                })
+            }
+        }
+    });
 
     let send = move |_| {
-        if send_lock == true {return;}
+        if send_lock == true {
+            return;
+        }
         send_lock.set(true);
+        loading.set(true);
         clean.set(true);
+
         let tmp = draft.read().clone();
-        if tmp.len() == 0 {return;}
+        if tmp.len() == 0 {
+            return;
+        }
         messages.write().push(Message {
             role: Role::User,
-            content: draft.read().clone(),
+            content: draft.read().replace("\n", "<br>").clone(),
         });
-        messages.write().push(Message::new(Role::Loading, "Please wait".into()));
-        draft.set(String::new());
+        // messages
+        //     .write()
+        //     .push(Message::new(Role::Loading, "Please wait".into()));
+        // draft.set(String::new());
 
         cx.spawn({
             let send_lock = send_lock.to_owned();
+            let loading = loading.to_owned();
             let bot = bot.to_owned();
             let messages = messages.to_owned();
-            
+
             async move {
-tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                let response = bot.write().chat(&tmp).await;
-                messages.write().last_mut().unwrap().loaded(response);
+                bot.write().chat(&tmp).await.unwrap_or_else(|err| {
+                    messages.write().push(Message::new(
+                        Role::Bot,
+                        format!("Error: {}", err.to_string()),
+                    ));
+                });
+
+                // let response = bot.write().chat(&tmp).await;
+                // messages.write().last_mut().unwrap().loaded(response.replace("\n","<br>"));
+                loading.set(false);
                 send_lock.set(false);
             }
         })
@@ -59,22 +88,19 @@ tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 match msg.role {
                     Role::User => rsx!(UserMessage { content: msg.content.clone() }),
                     Role::Bot => rsx!(OtherMessage { content: msg.content.clone() }),
-                    Role::Loading => rsx!(Loading { content: msg.content.clone() }),
                 }
+            }
+            if loading == true {
+                rsx!(Loading{})
             }
         }
         div {
             id: "input-area",
-            // textarea {
-            //     id: "user-input",
-            //     value: "{draft.read()}",
-            //     oninput: |evt| draft.set(evt.value.clone()),
-            // }
             UserInput {
                 draft: draft,
                 clean: clean
             }
-            button { 
+            button {
                 id: "send-button",
                 onclick: send, "Send" }
         }

@@ -40,7 +40,7 @@ impl User {
         if self.password == password {
             Ok(())
         } else {
-            bail!("密码错误")
+            bail!("Wrong password")
         }
     }
 }

@@ -13,7 +13,10 @@ diesel = { version = "2.1.0", features = ["sqlite", "r2d2"] }
 dioxus = "0.3.2"
 dioxus-liveview = { version = "0.3.0", features = ["axum"] }
 dotenvy = "0.15.7"
+indoc = "2.0.3"
 lazy_static = "1.4.0"
+log = "0.4.19"
 serde_json = "1.0.103"
 tokio = { version = "1.29.1", features = ["full"] }
+tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }

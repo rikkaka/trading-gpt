@@ -25,7 +25,7 @@ pub fn OtherMessage(cx: Scope<ContentProps>) -> Element {
     ))
 }
 
-pub fn Loading(cx: Scope<ContentProps>) -> Element {
+pub fn Loading(cx: Scope) -> Element {
     cx.render(rsx!(
         div {
             class: "chat-message other-message",

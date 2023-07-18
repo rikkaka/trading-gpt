@@ -1,7 +1,7 @@
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 fn main() {
-    std::env::set_var("RUST_LOG", "info");
+    // std::env::set_var("RUST_LOG", "info");
     tracing_subscriber::registry()
         .with(fmt::layer())
         .with(EnvFilter::from_default_env())
