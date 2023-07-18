@@ -103,13 +103,18 @@ pub async fn start_server() {
             <html>
                 <head> 
                     <title>Trading GPT</title>  
-                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <meta name="viewport" 
+                    content="width=device-width, 
+                    initial-scale=1, 
+                    minimum-scale=1,
+                    maximum-scale=1,
+                    user-scalable=no">
                 </head>
                 <body> <div id="main"></div> </body>
                 {glue}
             </html>
             "#,
-                    glue = dioxus_liveview::interpreter_glue(&format!("ws://{reachable_addr}:{port}/ws"))
+                    glue = dioxus_liveview::interpreter_glue(&format!("ws://{reachable_addr}/ws"))
                 ))
             }),
         )
