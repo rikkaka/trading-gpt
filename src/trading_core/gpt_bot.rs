@@ -9,7 +9,6 @@ use lazy_static::lazy_static;
 use log::debug;
 use serde_json::{json, Value};
 use tokio::sync::mpsc::Sender;
-use tracing_subscriber::field::debug;
 
 use super::types::User;
 
@@ -92,7 +91,6 @@ pub struct Bot {
     client: Client<OpenAIConfig>,
     system: Vec<Message>,
     messages: Vec<Message>,
-    messages_tmp: Vec<Message>,
     functions: Vec<Function>,
 
     usermaynull: UserMayNull,
@@ -105,12 +103,11 @@ impl Bot {
             client: Client::new(),
             system: Vec::new(),
             messages: Vec::new(),
-            messages_tmp: Vec::new(),
             functions: Vec::new(),
             usermaynull: None,
         };
-        bot.set_system();
-        bot.set_functions();
+        bot.set_system().unwrap();
+        bot.set_functions().unwrap();
         bot
     }
 
@@ -206,7 +203,7 @@ impl Bot {
 
     async fn chat_call_loop(&mut self) -> Result<()> {
         loop {
-            let mut response = self.chat_once().await?;
+            let response = self.chat_once().await?;
             let message = response.content;
             match message {
                 Some(msg) => {
@@ -220,7 +217,6 @@ impl Bot {
                 let system_response = self.perform(&function_call).unwrap_or_else(|e| format!("Error: {}", e));
                 self.add_function_msg(&function_call.name, &system_response)?;
                 debug!("System response: {}", system_response);
-                response = self.chat_once().await?;
             } else {
                 return Ok(());
             }

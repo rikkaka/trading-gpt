@@ -2,7 +2,6 @@ use axum::{extract::ws::WebSocketUpgrade, response::Html, routing::get, Router};
 use dioxus::prelude::*;
 use log::debug;
 use tokio::sync::mpsc;
-use tracing_subscriber::field::debug;
 
 use super::components::*;
 use super::types::*;
@@ -47,10 +46,6 @@ fn app(cx: Scope) -> Element {
             role: Role::User,
             content: draft.read().replace("\n", "<br>").clone(),
         });
-        // messages
-        //     .write()
-        //     .push(Message::new(Role::Loading, "Please wait".into()));
-        // draft.set(String::new());
 
         cx.spawn({
             let send_lock = send_lock.to_owned();
@@ -66,10 +61,7 @@ fn app(cx: Scope) -> Element {
                         format!("Error: {}", err.to_string()),
                     ));
                 });
-                // bot.write().chat(&tmp).await.unwrap();
 
-                // let response = bot.write().chat(&tmp).await;
-                // messages.write().last_mut().unwrap().loaded(response.replace("\n","<br>"));
                 loading.set(false);
                 send_lock.set(false);
             }
@@ -80,7 +72,7 @@ fn app(cx: Scope) -> Element {
         style { include_str!("./style.css") }
         div {
             id: "header",
-            h1 {"An intilligent payment system"}
+            h1 {"A demo intilligent payment system"}
             h2 {"Powered by ChatGPT"}
         }
         div {

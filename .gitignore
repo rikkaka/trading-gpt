@@ -3,5 +3,5 @@
 .DS_Store
 /db
 *.out
-.env
+/.env
 .VSCodeCounter
