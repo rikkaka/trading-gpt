@@ -36,7 +36,7 @@ impl User {
         if !User::check_existence_conn(username, &mut conn)? {
             bail!("Username doesn't exist")
         }
-        User::retrieve_from_db_conn(&username, &mut conn)
+        User::retrieve_from_db_conn(username, &mut conn)
     }
 
     pub fn update_to_db(&self) -> Result<()> {

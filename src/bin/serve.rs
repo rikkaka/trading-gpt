@@ -1,5 +1,4 @@
 use log::{info, debug};
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 fn main() {
     std::env::set_var("RUST_LOG", "debug");

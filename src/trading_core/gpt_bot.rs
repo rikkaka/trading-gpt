@@ -61,7 +61,7 @@ lazy_static! {
     static ref FUCTIONS_LOGIN: Vec<Function> = vec![
         FunctionArgs::default()
             .name("transfer")
-            .description("Transfer money to another user. User should provide the receiver and the amount to transfer")
+            .description("Transfer money to another user. User should provide the receiver and the amount to transfer. Note the amount must between 1 and one's balance")
             .parameters(json!({
                 "type": "object",
                 "properties": {
@@ -205,13 +205,10 @@ impl Bot {
         loop {
             let response = self.chat_once().await?;
             let message = response.content;
-            match message {
-                Some(msg) => {
-                    self.add_message(response.role, &msg)?;
-                    self.tx.send(msg).await?
-                }
-                None => (),
-            };
+            if let Some(msg) = message {
+                self.add_message(response.role, &msg)?;
+                self.tx.send(msg).await?
+            }
             if let Some(function_call) = response.function_call {
                 debug!("Function call: {:?}", function_call);
                 let system_response = self
@@ -250,9 +247,6 @@ impl Bot {
             "transfer" => {
                 let to = args.get_or("to", "Missing to")?;
                 let amount = args.get_or("amount", "Missing amount")?;
-                let amount = amount
-                    .parse::<i32>()
-                    .or_else(|_| bail!("Amout must be an int32"))?;
                 self.transfer(to, amount)?;
                 Ok("Transfer successfully".to_string())
             }
@@ -297,17 +291,29 @@ impl Bot {
     }
 }
 
-trait GetOr {
-    fn get_or(&self, arg: &str, or: &str) -> Result<&str>;
+trait GetOr<'a, T>
+where T: 'a {
+    fn get_or(&'a self, arg: &str, or: &str) -> Result<T>;
 }
 
-impl GetOr for Value {
-    fn get_or(&self, arg: &str, or: &str) -> Result<&str> {
+impl<'a> GetOr<'a, &'a str> for Value {
+    fn get_or(&'a self, arg: &str, or: &str) -> Result<&'a str> {
         let res = self
             .get(arg)
             .ok_or(anyhow!(or.to_string()))?
             .as_str()
             .unwrap();
         Ok(res)
+    }
+}
+
+impl GetOr<'_, i32> for Value {
+    fn get_or(&self, arg: &str, or: &str) -> Result<i32> {
+        let res = self
+            .get(arg)
+            .ok_or(anyhow!(or.to_string()))?
+            .as_i64()
+            .unwrap();
+        Ok(res.try_into()?)
     }
 }

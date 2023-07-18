@@ -10,8 +10,8 @@ pub fn app(cx: Scope) -> Element {
     let (tx, rx) = mpsc::channel::<String>(32);
 
     let bot = use_ref(cx, || Bot::new(tx));
-    let draft = use_ref(cx, || String::new());
-    let messages = use_ref(cx, || Vec::<Message>::new());
+    let draft = use_ref(cx, String::new);
+    let messages = use_ref(cx, Vec::<Message>::new);
     let send_lock = use_state(cx, || false);
     let clean = use_state(cx, || false);
     let loading = use_state(cx, || false);
@@ -34,7 +34,7 @@ pub fn app(cx: Scope) -> Element {
             return;
         }
         let tmp = draft.read().clone();
-        if tmp.len() == 0 {
+        if tmp.is_empty() {
             return;
         }
         send_lock.set(true);
@@ -42,7 +42,7 @@ pub fn app(cx: Scope) -> Element {
         clean.set(true);
         messages.write().push(Message {
             role: Role::User,
-            content: draft.read().replace("\n", "<br>").clone(),
+            content: draft.read().replace('\n', "<br>"),
         });
 
         cx.spawn({
@@ -56,7 +56,7 @@ pub fn app(cx: Scope) -> Element {
                 bot.write().chat(&tmp).await.unwrap_or_else(|err| {
                     messages.write().push(Message::new(
                         Role::Bot,
-                        format!("Error: {}", err.to_string()),
+                        format!("Error: {}", err),
                     ));
                 });
 
