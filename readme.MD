@@ -5,4 +5,4 @@ Which means you can perform every action by just chatting with the bot.
 
 [Try it on web](http://150.158.21.38/trading-gpt)
 ## Demo
-![Demo image](./images/image.png)
+<img src="./images/image.png" width="500">
