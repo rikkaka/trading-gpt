@@ -1,5 +1,4 @@
 use dioxus::prelude::*;
-use log::debug;
 use tokio::sync::mpsc;
 
 use super::components::*;
@@ -20,6 +19,7 @@ pub fn app(cx: Scope) -> Element {
         let mut rx = rx;
         let messages = messages.to_owned();
         async move {
+
             while let Some(msg) = rx.recv().await {
                 messages.write().push(Message {
                     role: Role::Bot,
@@ -52,7 +52,6 @@ pub fn app(cx: Scope) -> Element {
             let messages = messages.to_owned();
 
             async move {
-                debug!("Sending message: {}", tmp);
                 bot.write().chat(&tmp).await.unwrap_or_else(|err| {
                     messages.write().push(Message::new(
                         Role::Bot,

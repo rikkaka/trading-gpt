@@ -6,7 +6,7 @@ use async_openai::{
 };
 use indoc::formatdoc;
 use lazy_static::lazy_static;
-use log::debug;
+use tracing::info;
 use serde_json::{json, Value};
 use tokio::sync::mpsc::Sender;
 
@@ -20,10 +20,11 @@ type ModelArgs = openai_types::CreateChatCompletionRequestArgs;
 type MessageArgs = openai_types::ChatCompletionRequestMessageArgs;
 type FunctionArgs = openai_types::ChatCompletionFunctionsArgs;
 
-static SYSTEM_INIT: &str = "You are the AI assistant of a payment system. \
-You need to assist the user based on the functions you are provided. \
-Note that you have access to only four functions: signup, login, transfer, and logout. \
-Please focus on the functions you are provided.\n";
+static SYSTEM_INIT: &str = "You are the AI assistant of a payment system.\
+You need to assist the user based on the functions you are provided.\
+Note that you only have access to four functions: signup, login, transfer, and logout.\
+Please focus on the functions you are provided.\
+If the user ask about something unrelated to the payment system, ignore them.\n";
 
 lazy_static! {
     static ref MODEL_INIT: ModelArgs = ModelArgs::default()
@@ -112,6 +113,7 @@ impl Bot {
     }
 
     pub async fn chat(&mut self, draft: &str) -> Result<()> {
+        info!("Recieved message: {:?}", draft);
         self.add_message(openai_types::Role::User, draft).unwrap();
         self.chat_call_loop().await?;
         Ok(())
@@ -175,14 +177,12 @@ impl Bot {
     }
 
     fn build_model(&self) -> Result<Model> {
-        debug!("Ready to build model.");
         let model = MODEL_INIT
             .to_owned()
             .messages(vec![self.system.to_owned(), self.messages.to_owned()].concat())
             .functions(self.functions.to_owned())
             .function_call("auto")
             .build()?;
-        debug!("Model built: {:?}", model);
         Ok(model)
     }
 
@@ -206,16 +206,17 @@ impl Bot {
             let response = self.chat_once().await?;
             let message = response.content;
             if let Some(msg) = message {
+                info!("GPT response: {:?}", msg);
                 self.add_message(response.role, &msg)?;
                 self.tx.send(msg).await?
             }
             if let Some(function_call) = response.function_call {
-                debug!("Function call: {:?}", function_call);
+                info!("Function call: {:?}", function_call);
                 let system_response = self
                     .perform(&function_call)
                     .unwrap_or_else(|e| format!("Error: {}", e));
                 self.add_function_msg(&function_call.name, &system_response)?;
-                debug!("System response: {}", system_response);
+                info!("System response: {}", system_response);
             } else {
                 return Ok(());
             }

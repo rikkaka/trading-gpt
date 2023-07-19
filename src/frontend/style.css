@@ -4,6 +4,7 @@ body {
     padding: 0;
     background-color: #e4ecef;
     height: 100%;
+    max-width: 100vw;
 }
 
 button {
@@ -48,6 +49,7 @@ body {
 #header {
     /* display: flex; */
     width: 520px;
+    max-width: 98vw;
     margin: 0 auto 10px;
     /* height: 80px; */
     flex-grow: 1;
@@ -55,6 +57,7 @@ body {
 
 #chat-window {
     width: 500px;
+    max-width: 98vw;
     height: calc(100vh - 300px);
     /* flex-grow: 5; */
     /* flex-basis: 60%; */
