@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use dioxus::prelude::*;
+use dioxus::{prelude::*, html::br};
 
 #[derive(PartialEq, Props)]
 pub struct ContentProps {
@@ -11,7 +11,10 @@ pub fn UserMessage(cx: Scope<ContentProps>) -> Element {
     cx.render(rsx!(
         div {
             class: "chat-message user-message",
-            "{cx.props.content}"
+            for line in cx.props.content.lines() {
+                "{line}"
+                br {}
+            }
         }
     ))
 }
@@ -20,7 +23,10 @@ pub fn OtherMessage(cx: Scope<ContentProps>) -> Element {
     cx.render(rsx!(
         div {
             class: "chat-message other-message",
-            "{cx.props.content}"
+            for line in cx.props.content.lines() {
+                "{line}"
+                br {}
+            }
         }
     ))
 }

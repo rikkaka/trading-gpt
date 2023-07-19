@@ -28,7 +28,6 @@ If the user ask about something unrelated to the payment system, ignore them.\n"
 
 lazy_static! {
     static ref MODEL_INIT: ModelArgs = ModelArgs::default()
-        // .max_tokens(0u16)
         .model("gpt-3.5-turbo")
         .to_owned();
     static ref FUCTIONS_UNLOGIN: Vec<Function> = vec![
@@ -230,14 +229,16 @@ impl Bot {
                 let username = args.get_or("username", "Missing username")?;
                 let password = args.get_or("password", "Missing password")?;
                 self.signup(username, password)?;
-                Ok("Signup successfully".to_string())
+                let balance = self.usermaynull.as_ref().unwrap().balance;
+                Ok(format!("Signup successfully. User now logged in as {username}. balance: {balance}").into())
             }
 
             "login" => {
                 let username = args.get_or("username", "Missing username")?;
                 let password = args.get_or("password", "Missing password")?;
                 self.login(username, password)?;
-                Ok("Login successfully".to_string())
+                let balance = self.usermaynull.as_ref().unwrap().balance;
+                Ok(format!("Login as {username} successfully. balance: {balance}").into())
             }
 
             "logout" => {
@@ -249,7 +250,8 @@ impl Bot {
                 let to = args.get_or("to", "Missing to")?;
                 let amount = args.get_or("amount", "Missing amount")?;
                 self.transfer(to, amount)?;
-                Ok("Transfer successfully".to_string())
+                let balance = self.usermaynull.as_ref().unwrap().balance;
+                Ok(format!("Transfer of to {to} successfully, amout: {amount}. balance now: {balance}").to_string())
             }
 
             _ => bail!("Unknown function call: {}", function_call.name),
@@ -286,7 +288,7 @@ impl Bot {
             .ok_or_else(|| anyhow!("User not logged in"))?;
         ensure!(user.balance >= amount, "Insufficient balance");
         ensure!(user.balance > 0, "Balance must be positive");
-        user.transfer(to, amount).unwrap();
+        user.transfer(to, amount)?;
         self.set_system().unwrap();
         Ok(())
     }

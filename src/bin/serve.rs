@@ -1,4 +1,4 @@
-use tracing::{info, debug};
+
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt;
 use tracing_subscriber::prelude::*;

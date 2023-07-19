@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Error, Result};
+use anyhow::{bail, Error, Result};
 use dotenvy::dotenv;
 use lazy_static::lazy_static;
 
@@ -79,6 +79,9 @@ impl User {
     }
 
     fn retrieve_from_db_conn(username: &str, conn: &mut Pooled) -> Result<User> {
+        if !User::check_existence_conn(username, conn)? {
+            bail!("Username doesn't exist")
+        }
         let user = users::table
             .filter(users::username.eq(username))
             .first::<User>(conn)?;

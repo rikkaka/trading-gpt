@@ -1,7 +1,7 @@
 use super::types::User;
 use crate::global;
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 
 impl User {
     pub fn signup(username: &str, password: &str) -> Result<User> {

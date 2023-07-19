@@ -23,7 +23,7 @@ pub fn app(cx: Scope) -> Element {
             while let Some(msg) = rx.recv().await {
                 messages.write().push(Message {
                     role: Role::Bot,
-                    content: msg,
+                    content: msg
                 })
             }
         }
@@ -42,7 +42,7 @@ pub fn app(cx: Scope) -> Element {
         clean.set(true);
         messages.write().push(Message {
             role: Role::User,
-            content: draft.read().replace('\n', "<br>"),
+            content: draft.read().clone(),
         });
 
         cx.spawn({
