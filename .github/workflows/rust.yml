@@ -21,7 +21,7 @@ jobs:
     - name: Run tests
       run: |
         cargo install diesel_cli --no-default-features --features sqlite
-        export DATABASE_URL=./db/dev.db
+        export DATABASE_URL=./ci.db
         diesel setup
         cargo test --verbose
         
