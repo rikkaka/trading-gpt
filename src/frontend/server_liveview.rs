@@ -5,7 +5,7 @@ use super::app::app;
 
 pub async fn start_server() {
     dotenv().ok();
-    let reachable_addr = std::env::var("REACHABLE_ADDR").unwrap();
+    let reachable_addr = std::env::var("WS_REACHABLE_ADDR").unwrap();
     let listen_addr = std::env::var("LISTEN_ADDR").unwrap();
 
     let addr: std::net::SocketAddr = listen_addr.parse().unwrap();
