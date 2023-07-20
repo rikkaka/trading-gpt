@@ -48,12 +48,13 @@ pub fn Loading(cx: Scope) -> Element {
 pub struct DraftProps<'a> {
     draft: &'a UseRef<String>,
     clean: &'a UseState<bool>,
-    on_press: &'a UseState<Box<dyn Fn(Event<KeyboardData>)>>,
+    on_press: EventHandler<'a, Event<KeyboardData>>,
 }
 
 pub fn UserInput<'a>(cx: Scope<'a, DraftProps>) -> Element<'a> {
     let draft = cx.props.draft;
     let clean = cx.props.clean;
+
     if **clean {
         clean.set(false);
         cx.render(rsx!(textarea {
@@ -71,6 +72,7 @@ pub fn UserInput<'a>(cx: Scope<'a, DraftProps>) -> Element<'a> {
             oninput: |e| {
                 draft.set(e.value.clone());
             },
+            onkeypress: |e| cx.props.on_press.call(e),
         }))
     }
 }

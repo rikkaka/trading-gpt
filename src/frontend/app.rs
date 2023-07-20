@@ -68,7 +68,6 @@ pub fn app(cx: Scope) -> Element {
             send(0);
         }
     };
-    let send_enter: &UseState<Box<dyn Fn(Event<KeyboardData>)>> = use_state(cx,|| -> Box<dyn Fn(Event<KeyboardData>)>{ Box::new(send_enter)});
 
     let send_botton = move |_| {
         send(0);
