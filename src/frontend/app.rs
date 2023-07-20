@@ -1,3 +1,6 @@
+use std::rc::Rc;
+
+use dioxus::html::input_data::keyboard_types::Key;
 use dioxus::prelude::*;
 use tokio::sync::mpsc;
 
@@ -22,7 +25,7 @@ pub fn app(cx: Scope) -> Element {
             while let Some(msg) = rx.recv().await {
                 messages.write().push(Message {
                     role: Role::Bot,
-                    content: msg
+                    content: msg,
                 })
             }
         }
@@ -49,16 +52,26 @@ pub fn app(cx: Scope) -> Element {
 
             async move {
                 bot.write().chat(&tmp).await.unwrap_or_else(|err| {
-                    messages.write().push(Message::new(
-                        Role::Bot,
-                        format!("Error: {}", err),
-                    ));
+                    messages
+                        .write()
+                        .push(Message::new(Role::Bot, format!("Error: {}", err)));
                 });
 
                 loading.set(false);
                 send_lock.set(false);
             }
         })
+    };
+
+    let send_enter = move |e: Event<KeyboardData>| {
+        if let Key::Enter = e.data.key() {
+            send(0);
+        }
+    };
+    let send_enter: &UseState<Box<dyn Fn(Event<KeyboardData>)>> = use_state(cx,|| -> Box<dyn Fn(Event<KeyboardData>)>{ Box::new(send_enter)});
+
+    let send_botton = move |_| {
+        send(0);
     };
 
     cx.render(rsx!(
@@ -85,14 +98,18 @@ pub fn app(cx: Scope) -> Element {
             id: "input-area",
             UserInput {
                 draft: draft,
-                clean: clean
+                clean: clean,
+                on_press: send_enter,
             }
             button {
                 id: "send-button",
-                onclick: send, "Send" }
+                onclick: send_botton, "Send" }
         }
         div {
             id: "bottom-holder"
         }
     ))
 }
+
+trait AnyType {}
+impl<T> AnyType for T {}

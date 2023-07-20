@@ -1,6 +1,8 @@
 #![allow(non_snake_case)]
 
-use dioxus::{prelude::*, html::br};
+use std::rc::Rc;
+
+use dioxus::{html::br, prelude::*};
 
 #[derive(PartialEq, Props)]
 pub struct ContentProps {
@@ -42,10 +44,11 @@ pub fn Loading(cx: Scope) -> Element {
     ))
 }
 
-#[derive(PartialEq, Props)]
+#[derive(Props)]
 pub struct DraftProps<'a> {
     draft: &'a UseRef<String>,
     clean: &'a UseState<bool>,
+    on_press: &'a UseState<Box<dyn Fn(Event<KeyboardData>)>>,
 }
 
 pub fn UserInput<'a>(cx: Scope<'a, DraftProps>) -> Element<'a> {
