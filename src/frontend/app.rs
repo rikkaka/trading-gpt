@@ -17,9 +17,8 @@ pub fn app(cx: Scope) -> Element {
 
     use_future(cx, (), move |_| {
         let mut rx = rx;
-        let messages = messages.to_owned();
+        to_owned![messages];
         async move {
-
             while let Some(msg) = rx.recv().await {
                 messages.write().push(Message {
                     role: Role::Bot,
@@ -46,10 +45,7 @@ pub fn app(cx: Scope) -> Element {
         });
 
         cx.spawn({
-            let send_lock = send_lock.to_owned();
-            let loading = loading.to_owned();
-            let bot = bot.to_owned();
-            let messages = messages.to_owned();
+            to_owned![send_lock, loading, bot, messages];
 
             async move {
                 bot.write().chat(&tmp).await.unwrap_or_else(|err| {
