@@ -46,7 +46,7 @@ lazy_static! {
             .unwrap(),
         FunctionArgs::default()
             .name("signup")
-            .description("Sign up a new user. User should provide username and password. You CANNOT sign up if the user hasn't provided username and password")
+            .description("Sign up a new user. User should provide username and password. If user didn't provide a username and password, let him provide one")
             .parameters(json!({
                 "type": "object",
                 "properties": {
