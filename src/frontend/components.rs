@@ -1,8 +1,5 @@
 #![allow(non_snake_case)]
-
-use std::rc::Rc;
-
-use dioxus::{html::br, prelude::*};
+use dioxus::prelude::*;
 
 #[derive(PartialEq, Props)]
 pub struct ContentProps {

@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use dioxus::html::input_data::keyboard_types::Key;
 use dioxus::prelude::*;
 use tokio::sync::mpsc;
@@ -109,6 +107,3 @@ pub fn app(cx: Scope) -> Element {
         }
     ))
 }
-
-trait AnyType {}
-impl<T> AnyType for T {}
