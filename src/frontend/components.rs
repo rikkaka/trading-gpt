@@ -65,7 +65,7 @@ pub fn UserInput<'a>(cx: Scope<'a, DraftProps>) -> Element<'a> {
     } else {
         cx.render(rsx!(textarea {
             id: "user-input",
-            placeholder: "Type your message here",
+            placeholder: "Type any message in any language, for example: I wanna sign up a new account",
             oninput: |e| {
                 draft.set(e.value.clone());
             },
